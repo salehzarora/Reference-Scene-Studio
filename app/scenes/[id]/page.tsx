@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SceneImage } from "@/components/scenes/SceneImage";
 import { SceneMetadata } from "@/components/scenes/SceneMetadata";
+import { CharacterReferencePreview } from "@/components/scenes/CharacterReferencePreview";
 import { useToast } from "@/components/ui/Toast";
 import { getScene, saveScene, deleteScene } from "@/lib/storage/localScenes";
 import type {
@@ -54,6 +55,12 @@ export default function SceneDetailPage() {
           description: scene.description,
           stylePreset: scene.stylePreset,
           aspectRatio: scene.aspectRatio,
+          characterReference: scene.characterReference
+            ? {
+                name: scene.characterReference.name,
+                notes: scene.characterReference.notes,
+              }
+            : null,
         }),
       });
       if (!res.ok) {
@@ -61,7 +68,8 @@ export default function SceneDetailPage() {
           | GenerateImageErrorResponse
           | null;
         const message =
-          errBody?.error?.message ?? `Regeneration failed (HTTP ${res.status})`;
+          errBody?.error?.message ??
+          `Regeneration failed (HTTP ${res.status})`;
         throw new Error(message);
       }
       const data = (await res.json()) as GenerateImageResponse;
@@ -221,6 +229,10 @@ export default function SceneDetailPage() {
               <SceneMetadata scene={scene} />
             </CardContent>
           </Card>
+
+          {scene.characterReference ? (
+            <CharacterReferencePreview reference={scene.characterReference} />
+          ) : null}
 
           <Card>
             <CardHeader>

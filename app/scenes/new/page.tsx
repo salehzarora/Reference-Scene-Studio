@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { StylePresetChips } from "@/components/scenes/StylePresetChips";
 import { AspectRatioSelector } from "@/components/scenes/AspectRatioSelector";
 import { SceneImage } from "@/components/scenes/SceneImage";
+import { CharacterReferenceUploader } from "@/components/scenes/CharacterReferenceUploader";
 import { useToast } from "@/components/ui/Toast";
 import { saveScene } from "@/lib/storage/localScenes";
 import { uuid, truncate } from "@/lib/utils";
@@ -19,6 +20,7 @@ import type {
   GenerateImageResponse,
   GenerateImageErrorResponse,
   Scene,
+  CharacterReference,
 } from "@/types/scene";
 
 export default function NewScenePage() {
@@ -29,6 +31,8 @@ export default function NewScenePage() {
   const [description, setDescription] = React.useState("");
   const [stylePreset, setStylePreset] = React.useState(DEFAULT_STYLE_ID);
   const [aspectRatio, setAspectRatio] = React.useState(DEFAULT_ASPECT_ID);
+  const [characterReference, setCharacterReference] =
+    React.useState<CharacterReference | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
@@ -46,6 +50,13 @@ export default function NewScenePage() {
           description: description.trim(),
           stylePreset,
           aspectRatio,
+          // Only name + notes go to the server. The image itself stays local.
+          characterReference: characterReference
+            ? {
+                name: characterReference.name,
+                notes: characterReference.notes,
+              }
+            : null,
         }),
       });
 
@@ -72,6 +83,7 @@ export default function NewScenePage() {
         status: "ready",
         provider: data.provider,
         model: data.model,
+        characterReference: characterReference ?? undefined,
         createdAt: now,
         updatedAt: now,
       };
@@ -87,7 +99,6 @@ export default function NewScenePage() {
     }
   }
 
-  // Submit on Cmd/Ctrl+Enter from textarea.
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
@@ -99,14 +110,15 @@ export default function NewScenePage() {
     <div className="space-y-8">
       <div>
         <div className="text-xs uppercase tracking-wider text-text-muted">
-          Stage 1
+          Stage 2 · Text + Optional Reference
         </div>
         <h1 className="mt-1 text-2xl md:text-3xl font-semibold tracking-tight">
           New Scene
         </h1>
         <p className="mt-2 text-sm text-text-secondary max-w-2xl leading-relaxed">
-          Describe what you want to see. The system builds a final prompt by
-          combining your description with the selected style and aspect ratio.
+          Describe the scene. Optionally attach a character reference so the
+          generator treats that subject as fixed. Style and aspect ratio are
+          applied automatically.
         </p>
       </div>
 
@@ -155,6 +167,26 @@ export default function NewScenePage() {
 
           <Card>
             <CardHeader>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <CardTitle>Character reference (optional)</CardTitle>
+                  <CardDescription>
+                    Lock the main subject to an uploaded image. The reference
+                    is stored locally and described to the generator as fixed.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <CharacterReferenceUploader
+                value={characterReference}
+                onChange={setCharacterReference}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Style preset</CardTitle>
               <CardDescription>
                 The style adds visual modifiers on top of your description.
@@ -173,7 +205,10 @@ export default function NewScenePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AspectRatioSelector value={aspectRatio} onChange={setAspectRatio} />
+              <AspectRatioSelector
+                value={aspectRatio}
+                onChange={setAspectRatio}
+              />
             </CardContent>
           </Card>
 
@@ -212,22 +247,53 @@ export default function NewScenePage() {
                 Live preview of the selected aspect ratio.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               <SceneImage
                 imageUrl={null}
                 aspectRatioId={aspectRatio}
                 loading={loading}
               />
-              <div className="mt-3 flex items-center gap-2 text-xs text-text-muted">
+              <div className="flex items-center gap-2 text-xs text-text-muted">
                 <Sparkles className="h-3.5 w-3.5 text-accent" />
                 <span>
                   {loading
                     ? "Generating with the active provider…"
-                    : "Press Generate to render this scene."}
+                    : characterReference
+                      ? "Will lock subject to your character reference."
+                      : "Press Generate to render this scene."}
                 </span>
               </div>
             </CardContent>
           </Card>
+
+          {characterReference?.imageUrl ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Reference</CardTitle>
+                <CardDescription>
+                  Locked subject for this scene.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={characterReference.imageUrl}
+                  alt={characterReference.name || "Character reference"}
+                  className="w-full max-h-56 object-contain rounded-md border border-border bg-bg-base"
+                />
+                <div className="mt-3 text-sm text-text-primary">
+                  {characterReference.name || (
+                    <span className="text-text-muted italic">Unnamed</span>
+                  )}
+                </div>
+                {characterReference.notes ? (
+                  <p className="mt-1 text-xs text-text-secondary leading-relaxed line-clamp-3">
+                    {characterReference.notes}
+                  </p>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
       </div>
     </div>

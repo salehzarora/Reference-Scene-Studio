@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { UserSquare2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { SceneImage } from "@/components/scenes/SceneImage";
 import { formatDate, truncate } from "@/lib/utils";
@@ -9,18 +10,30 @@ import type { Scene } from "@/types/scene";
 
 export function SceneCard({ scene }: { scene: Scene }) {
   const style = getStylePreset(scene.stylePreset);
+  const hasRef = Boolean(scene.characterReference);
   return (
     <Link
       href={`/scenes/${scene.id}`}
       className="group block rounded-lg border border-border bg-bg-surface hover:bg-bg-hover/50 hover:border-border-strong transition-colors overflow-hidden focus-ring"
     >
-      <SceneImage
-        imageUrl={scene.imageUrl}
-        aspectRatioId={scene.aspectRatio}
-        errored={scene.status === "failed"}
-        loading={scene.status === "generating"}
-        className="rounded-none border-0 border-b border-border"
-      />
+      <div className="relative">
+        <SceneImage
+          imageUrl={scene.imageUrl}
+          aspectRatioId={scene.aspectRatio}
+          errored={scene.status === "failed"}
+          loading={scene.status === "generating"}
+          className="rounded-none border-0 border-b border-border"
+        />
+        {hasRef ? (
+          <span
+            className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-md bg-bg-base/80 border border-accent/30 px-1.5 py-0.5 text-[10px] font-medium text-accent backdrop-blur"
+            title={`Character reference: ${scene.characterReference?.name || "unnamed"}`}
+          >
+            <UserSquare2 className="h-3 w-3" />
+            REF
+          </span>
+        ) : null}
+      </div>
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-sm font-semibold text-text-primary leading-snug">

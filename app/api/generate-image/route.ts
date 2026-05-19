@@ -8,7 +8,7 @@ import type { GenerateImageResponse } from "@/types/scene";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// OpenAI image gen can take a while. Allow up to 90s on Node runtime.
+// OpenAI image gen can take a while. Allow up to ~90s on Node runtime.
 export const maxDuration = 90;
 
 function errorResponse(code: string, message: string, status = 400) {
@@ -33,13 +33,19 @@ export async function POST(req: Request) {
     );
   }
 
-  const { description, stylePreset, aspectRatio } = parsed.data;
+  const { description, stylePreset, aspectRatio, characterReference } =
+    parsed.data;
   const ratio = getAspectRatio(aspectRatio);
   if (!ratio) {
     return errorResponse("invalid_aspect", "Unknown aspect ratio", 400);
   }
 
-  const finalPrompt = buildPrompt({ description, stylePreset, aspectRatio });
+  const finalPrompt = buildPrompt({
+    description,
+    stylePreset,
+    aspectRatio,
+    characterReference: characterReference ?? null,
+  });
   const provider = getActiveProvider();
 
   try {
@@ -56,7 +62,11 @@ export async function POST(req: Request) {
     return NextResponse.json(payload);
   } catch (err) {
     if (err instanceof ProviderError) {
-      return errorResponse(err.code, err.message, err.status >= 400 ? err.status : 500);
+      return errorResponse(
+        err.code,
+        err.message,
+        err.status >= 400 ? err.status : 500,
+      );
     }
     const message =
       err instanceof Error ? err.message : "Unexpected provider error";
