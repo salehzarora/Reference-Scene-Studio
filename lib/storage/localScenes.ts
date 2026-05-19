@@ -23,12 +23,34 @@ function readAll(): Scene[] {
   }
 }
 
+export class ScenesQuotaError extends Error {
+  constructor() {
+    super(
+      "Local storage is full. Delete some scenes or series and try again.",
+    );
+    this.name = "ScenesQuotaError";
+  }
+}
+
+function isQuotaError(err: unknown): boolean {
+  return (
+    err instanceof DOMException &&
+    (err.name === "QuotaExceededError" ||
+      err.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+      err.code === 22)
+  );
+}
+
 function writeAll(scenes: Scene[]): void {
   if (!isBrowser()) return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(scenes));
   } catch (err) {
+    if (isQuotaError(err)) {
+      throw new ScenesQuotaError();
+    }
     console.warn("localScenes: failed to write storage", err);
+    throw err;
   }
 }
 

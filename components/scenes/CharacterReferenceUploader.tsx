@@ -14,6 +14,35 @@ interface Props {
   onChange: (next: CharacterReference | null) => void;
 }
 
+interface StoreResponse {
+  imageUrl: string;
+  fileName: string;
+  bytes: number;
+  mime: string;
+}
+
+interface StoreErrorResponse {
+  error: { code: string; message: string };
+}
+
+async function persistImage(dataUrl: string, fileName: string): Promise<string> {
+  const res = await fetch("/api/images/store", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageDataUrl: dataUrl, fileName }),
+  });
+  if (!res.ok) {
+    const errBody = (await res.json().catch(() => null)) as
+      | StoreErrorResponse
+      | null;
+    throw new Error(
+      errBody?.error?.message ?? `Image upload failed (HTTP ${res.status})`,
+    );
+  }
+  const data = (await res.json()) as StoreResponse;
+  return data.imageUrl;
+}
+
 export function CharacterReferenceUploader({ value, onChange }: Props) {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -29,10 +58,14 @@ export function CharacterReferenceUploader({ value, onChange }: Props) {
     setBusy(true);
     try {
       const result = await compressImage(file);
+      const persistedUrl = await persistImage(
+        result.dataUrl,
+        `reference-${Date.now()}`,
+      );
       onChange({
         name: value?.name ?? "",
         notes: value?.notes ?? "",
-        imageUrl: result.dataUrl,
+        imageUrl: persistedUrl,
       });
       setMeta({
         bytes: result.bytes,
@@ -103,11 +136,11 @@ export function CharacterReferenceUploader({ value, onChange }: Props) {
               <ImagePlus className="h-6 w-6 text-accent" />
             )}
             <div className="text-sm font-medium text-text-primary">
-              {busy ? "Processing image…" : "Upload character reference"}
+              {busy ? "Processing & uploading…" : "Upload character reference"}
             </div>
             <div className="text-xs text-text-muted">
-              Click to browse or drop a PNG / JPEG / WebP — auto-resized for
-              local storage
+              Click to browse or drop a PNG / JPEG / WebP — compressed and
+              saved to /public/uploads
             </div>
           </button>
         </div>
@@ -158,8 +191,8 @@ export function CharacterReferenceUploader({ value, onChange }: Props) {
                 <span className="flex items-center gap-1">
                   <UserSquare2 className="h-3 w-3" />
                   {meta
-                    ? `${meta.width}×${meta.height} · ${formatKb(meta.bytes)}`
-                    : "Stored locally only"}
+                    ? `${meta.width}×${meta.height} · ${formatKb(meta.bytes)} · stored on disk`
+                    : "Stored on disk under /public/uploads"}
                 </span>
                 <span>{value.notes.length}/500</span>
               </div>

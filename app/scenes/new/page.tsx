@@ -12,7 +12,7 @@ import { AspectRatioSelector } from "@/components/scenes/AspectRatioSelector";
 import { SceneImage } from "@/components/scenes/SceneImage";
 import { CharacterReferenceUploader } from "@/components/scenes/CharacterReferenceUploader";
 import { useToast } from "@/components/ui/Toast";
-import { saveScene } from "@/lib/storage/localScenes";
+import { saveScene, ScenesQuotaError } from "@/lib/storage/localScenes";
 import { uuid, truncate } from "@/lib/utils";
 import { DEFAULT_STYLE_ID } from "@/lib/config/styles";
 import { DEFAULT_ASPECT_ID } from "@/lib/config/aspectRatios";
@@ -87,7 +87,21 @@ export default function NewScenePage() {
         createdAt: now,
         updatedAt: now,
       };
-      saveScene(scene);
+      try {
+        saveScene(scene);
+      } catch (storageErr) {
+        const message =
+          storageErr instanceof ScenesQuotaError
+            ? storageErr.message
+            : storageErr instanceof Error
+              ? storageErr.message
+              : "Could not save scene locally";
+        // Image is already on disk; we just couldn't index it. Don't
+        // navigate to a page that won't find the scene.
+        setErrorMsg(message);
+        toast(message, { variant: "error" });
+        return;
+      }
       toast("Scene generated", { variant: "success" });
       router.push(`/scenes/${scene.id}`);
     } catch (err) {

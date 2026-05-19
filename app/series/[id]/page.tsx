@@ -73,6 +73,25 @@ export default function SeriesDetailPage() {
     setSeries(next);
   }
 
+  function tryUpdateScene(
+    sceneId: string,
+    patch: Parameters<typeof updateSeriesScene>[2],
+  ): SeriesProject | undefined {
+    if (!series) return undefined;
+    try {
+      return updateSeriesScene(series.id, sceneId, patch);
+    } catch (err) {
+      const message =
+        err instanceof SeriesQuotaError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Could not save scene update";
+      toast(message, { variant: "error" });
+      return undefined;
+    }
+  }
+
   async function generateScene(sceneId: string): Promise<boolean> {
     if (!series) return false;
     const target = series.scenes.find((s) => s.id === sceneId);
@@ -85,7 +104,7 @@ export default function SeriesDetailPage() {
     });
 
     // Optimistic update.
-    const optimistic = updateSeriesScene(series.id, sceneId, {
+    const optimistic = tryUpdateScene(sceneId, {
       status: "generating",
       error: undefined,
     });
@@ -119,7 +138,7 @@ export default function SeriesDetailPage() {
       }
 
       const data = (await res.json()) as GenerateImageResponse;
-      const updated = updateSeriesScene(series.id, sceneId, {
+      const updated = tryUpdateScene(sceneId, {
         status: "ready",
         imageUrl: data.imageUrl,
         promptUsed: data.finalPrompt,
@@ -131,7 +150,7 @@ export default function SeriesDetailPage() {
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
-      const failed = updateSeriesScene(series.id, sceneId, {
+      const failed = tryUpdateScene(sceneId, {
         status: "failed",
         error: message,
       });
@@ -181,7 +200,7 @@ export default function SeriesDetailPage() {
     const trimmed = description.trim();
     const target = series.scenes.find((s) => s.id === sceneId);
     if (!target || target.description === trimmed) return;
-    const updated = updateSeriesScene(series.id, sceneId, {
+    const updated = tryUpdateScene(sceneId, {
       description: trimmed,
     });
     if (updated) setSeries(updated);

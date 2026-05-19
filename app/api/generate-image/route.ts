@@ -4,6 +4,7 @@ import { getActiveProvider } from "@/lib/ai";
 import { buildPrompt } from "@/lib/ai/promptBuilder";
 import { getAspectRatio } from "@/lib/config/aspectRatios";
 import { ProviderError } from "@/lib/ai/providers/types";
+import { storeImageAny } from "@/lib/storage/imageStore";
 import type { GenerateImageResponse } from "@/types/scene";
 
 export const runtime = "nodejs";
@@ -54,18 +55,18 @@ export async function POST(req: Request) {
   });
   const provider = getActiveProvider();
 
+  let providerImageUrl: string;
+  let providerName: "openai" | "placeholder";
+  let modelName: string;
+
   try {
     const result = await provider.generate({
       prompt: finalPrompt,
       aspectRatio: ratio,
     });
-    const payload: GenerateImageResponse = {
-      imageUrl: result.imageUrl,
-      finalPrompt,
-      provider: result.provider,
-      model: result.model,
-    };
-    return NextResponse.json(payload);
+    providerImageUrl = result.imageUrl;
+    providerName = result.provider;
+    modelName = result.model;
   } catch (err) {
     if (err instanceof ProviderError) {
       return errorResponse(
@@ -78,4 +79,24 @@ export async function POST(req: Request) {
       err instanceof Error ? err.message : "Unexpected provider error";
     return errorResponse("provider_error", message, 500);
   }
+
+  // Persist the image to /public/uploads so localStorage only stores a URL.
+  let storedUrl: string;
+  try {
+    const fileSlug = `${providerName}-${stylePreset}-${aspectRatio.replace(":", "x")}`;
+    const stored = await storeImageAny(providerImageUrl, fileSlug);
+    storedUrl = stored.imageUrl;
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Failed to persist generated image";
+    return errorResponse("store_failed", message, 500);
+  }
+
+  const payload: GenerateImageResponse = {
+    imageUrl: storedUrl,
+    finalPrompt,
+    provider: providerName,
+    model: modelName,
+  };
+  return NextResponse.json(payload);
 }

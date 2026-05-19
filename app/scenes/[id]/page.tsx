@@ -19,7 +19,12 @@ import { SceneImage } from "@/components/scenes/SceneImage";
 import { SceneMetadata } from "@/components/scenes/SceneMetadata";
 import { CharacterReferencePreview } from "@/components/scenes/CharacterReferencePreview";
 import { useToast } from "@/components/ui/Toast";
-import { getScene, saveScene, deleteScene } from "@/lib/storage/localScenes";
+import {
+  getScene,
+  saveScene,
+  deleteScene,
+  ScenesQuotaError,
+} from "@/lib/storage/localScenes";
 import type {
   GenerateImageResponse,
   GenerateImageErrorResponse,
@@ -83,7 +88,20 @@ export default function SceneDetailPage() {
         errorMessage: undefined,
         updatedAt: new Date().toISOString(),
       };
-      saveScene(updated);
+      try {
+        saveScene(updated);
+      } catch (storageErr) {
+        const message =
+          storageErr instanceof ScenesQuotaError
+            ? storageErr.message
+            : storageErr instanceof Error
+              ? storageErr.message
+              : "Could not save scene locally";
+        // Keep the in-memory updated scene visible but warn the user.
+        setScene(updated);
+        toast(message, { variant: "error" });
+        return;
+      }
       setScene(updated);
       toast("Scene regenerated", { variant: "success" });
     } catch (err) {
@@ -94,7 +112,11 @@ export default function SceneDetailPage() {
         errorMessage: message,
         updatedAt: new Date().toISOString(),
       };
-      saveScene(failed);
+      try {
+        saveScene(failed);
+      } catch {
+        // Already in an error state; skip secondary storage warning.
+      }
       setScene(failed);
       toast(message, { variant: "error" });
     } finally {
