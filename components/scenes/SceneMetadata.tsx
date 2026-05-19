@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/Badge";
+import { BadgeCheck, FileText, Image } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { getStylePreset } from "@/lib/config/styles";
 import type { Scene } from "@/types/scene";
@@ -32,6 +33,26 @@ export function SceneMetadata({ scene }: { scene: Scene }) {
       </Field>
       <Field label="Aspect Ratio">{scene.aspectRatio}</Field>
       <Field label="Style">{style?.label ?? scene.stylePreset}</Field>
+      {scene.generationMode ? (
+        <Field label="Generation">
+          {scene.generationMode === "reference-assisted" ? (
+            <Badge variant="accent">
+              <BadgeCheck className="h-3 w-3 mr-1" />
+              Reference image used
+            </Badge>
+          ) : scene.generationMode === "text-only" ? (
+            <Badge variant="outline">
+              <FileText className="h-3 w-3 mr-1" />
+              Reference as text only
+            </Badge>
+          ) : (
+            <Badge variant="neutral">
+              <Image className="h-3 w-3 mr-1" />
+              Placeholder
+            </Badge>
+          )}
+        </Field>
+      ) : null}
       <Field label="Created">{formatDate(scene.createdAt)}</Field>
       <Field label="Updated">{formatDate(scene.updatedAt)}</Field>
     </dl>

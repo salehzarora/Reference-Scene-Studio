@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Wand2 } from "lucide-react";
+import { Sparkles, Wand2, BadgeCheck, FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 import { StylePresetChips } from "@/components/scenes/StylePresetChips";
 import { AspectRatioSelector } from "@/components/scenes/AspectRatioSelector";
 import { SceneImage } from "@/components/scenes/SceneImage";
@@ -22,6 +23,23 @@ import type {
   Scene,
   CharacterReference,
 } from "@/types/scene";
+
+/** Fetches a server-side image path and returns it as a base64 data URL. */
+async function fetchAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error("Could not read reference image"));
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
 
 export default function NewScenePage() {
   const router = useRouter();
@@ -43,6 +61,13 @@ export default function NewScenePage() {
     setLoading(true);
     setErrorMsg(null);
     try {
+      // Load the reference image as base64 so the backend can pass it directly
+      // to the provider instead of relying on text metadata alone.
+      let referenceImageData: string | null = null;
+      if (characterReference?.imageUrl) {
+        referenceImageData = await fetchAsDataUrl(characterReference.imageUrl);
+      }
+
       const res = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -50,11 +75,11 @@ export default function NewScenePage() {
           description: description.trim(),
           stylePreset,
           aspectRatio,
-          // Only name + notes go to the server. The image itself stays local.
           characterReference: characterReference
             ? {
                 name: characterReference.name,
                 notes: characterReference.notes,
+                ...(referenceImageData ? { referenceImageData } : {}),
               }
             : null,
         }),
@@ -83,6 +108,7 @@ export default function NewScenePage() {
         status: "ready",
         provider: data.provider,
         model: data.model,
+        generationMode: data.generationMode,
         characterReference: characterReference ?? undefined,
         createdAt: now,
         updatedAt: now,
@@ -124,15 +150,15 @@ export default function NewScenePage() {
     <div className="space-y-8">
       <div>
         <div className="text-xs uppercase tracking-wider text-text-muted">
-          Stage 2 · Text + Optional Reference
+          Stage 3 · Reference-Based Image Generation
         </div>
         <h1 className="mt-1 text-2xl md:text-3xl font-semibold tracking-tight">
           New Scene
         </h1>
         <p className="mt-2 text-sm text-text-secondary max-w-2xl leading-relaxed">
-          Describe the scene. Optionally attach a character reference so the
-          generator treats that subject as fixed. Style and aspect ratio are
-          applied automatically.
+          Describe the scene. Optionally attach a character reference — the
+          image itself is sent to the generator for stronger identity
+          consistency.
         </p>
       </div>
 
@@ -186,9 +212,16 @@ export default function NewScenePage() {
                   <CardTitle>Character reference (optional)</CardTitle>
                   <CardDescription>
                     Lock the main subject to an uploaded image. The reference
-                    is stored locally and described to the generator as fixed.
+                    image is sent directly to the generator for visual identity
+                    consistency.
                   </CardDescription>
                 </div>
+                {characterReference?.imageUrl ? (
+                  <Badge variant="accent" className="shrink-0 mt-0.5">
+                    <BadgeCheck className="h-3 w-3 mr-1" />
+                    Image will be used
+                  </Badge>
+                ) : null}
               </div>
             </CardHeader>
             <CardContent>
@@ -271,12 +304,22 @@ export default function NewScenePage() {
                 <Sparkles className="h-3.5 w-3.5 text-accent" />
                 <span>
                   {loading
-                    ? "Generating with the active provider…"
-                    : characterReference
-                      ? "Will lock subject to your character reference."
-                      : "Press Generate to render this scene."}
+                    ? characterReference?.imageUrl
+                      ? "Generating with reference image…"
+                      : "Generating with the active provider…"
+                    : characterReference?.imageUrl
+                      ? "Reference image will be sent to the generator."
+                      : characterReference
+                        ? "Reference name/notes will be used in the prompt."
+                        : "Press Generate to render this scene."}
                 </span>
               </div>
+              {characterReference && !characterReference.imageUrl ? (
+                <div className="flex items-center gap-1.5 text-xs text-text-muted border border-border rounded-md px-2.5 py-1.5">
+                  <FileText className="h-3.5 w-3.5 shrink-0" />
+                  Reference used as text only
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 

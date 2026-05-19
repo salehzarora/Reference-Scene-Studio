@@ -10,8 +10,12 @@ import {
   Download,
   Copy,
   Check,
+  BadgeCheck,
+  FileText,
+  Image,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -29,7 +33,54 @@ import type {
   GenerateImageResponse,
   GenerateImageErrorResponse,
   Scene,
+  GenerationMode,
 } from "@/types/scene";
+
+/** Fetches a server-side image path and returns it as a base64 data URL. */
+async function fetchAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error("Could not read reference image"));
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+function GenerationModeBadge({ mode }: { mode: GenerationMode | undefined }) {
+  if (!mode) return null;
+  if (mode === "reference-assisted") {
+    return (
+      <Badge variant="accent">
+        <BadgeCheck className="h-3 w-3 mr-1" />
+        Reference image used
+      </Badge>
+    );
+  }
+  if (mode === "text-only") {
+    return (
+      <Badge variant="outline">
+        <FileText className="h-3 w-3 mr-1" />
+        Reference used as text only
+      </Badge>
+    );
+  }
+  if (mode === "placeholder") {
+    return (
+      <Badge variant="neutral">
+        <Image className="h-3 w-3 mr-1" />
+        Placeholder
+      </Badge>
+    );
+  }
+  return null;
+}
 
 export default function SceneDetailPage() {
   const params = useParams<{ id: string }>();
@@ -53,6 +104,15 @@ export default function SceneDetailPage() {
     setRegenerating(true);
     setScene({ ...scene, status: "generating" });
     try {
+      // Load the reference image as base64 so the backend uses the actual
+      // image rather than only text metadata.
+      let referenceImageData: string | null = null;
+      if (scene.characterReference?.imageUrl) {
+        referenceImageData = await fetchAsDataUrl(
+          scene.characterReference.imageUrl,
+        );
+      }
+
       const res = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -64,6 +124,7 @@ export default function SceneDetailPage() {
             ? {
                 name: scene.characterReference.name,
                 notes: scene.characterReference.notes,
+                ...(referenceImageData ? { referenceImageData } : {}),
               }
             : null,
         }),
@@ -84,6 +145,7 @@ export default function SceneDetailPage() {
         imageUrl: data.imageUrl,
         provider: data.provider,
         model: data.model,
+        generationMode: data.generationMode,
         status: "ready",
         errorMessage: undefined,
         updatedAt: new Date().toISOString(),
@@ -200,6 +262,11 @@ export default function SceneDetailPage() {
           <p className="mt-2 text-sm text-text-secondary max-w-2xl leading-relaxed">
             {scene.description}
           </p>
+          {scene.generationMode ? (
+            <div className="mt-3">
+              <GenerationModeBadge mode={scene.generationMode} />
+            </div>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Button

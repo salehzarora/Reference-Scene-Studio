@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\nigga\\\\Documents\\\\Claude\\\\Projects\\\\Reference Scene Studio\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(npm run *)",
+      "Bash(node -e \"const l = require\\('lucide-react'\\); const icons = Object.keys\\(l\\).filter\\(k => k.toLowerCase\\(\\).includes\\('image'\\) || k.toLowerCase\\(\\).includes\\('scan'\\) || k.toLowerCase\\(\\).includes\\('badge'\\) || k.toLowerCase\\(\\).includes\\('check'\\)\\); console.log\\(icons.join\\('\\\\n'\\)\\);\")",
+      "Bash(node -e \"const l = require\\('lucide-react'\\); const icons = Object.keys\\(l\\).filter\\(k => !k.endsWith\\('Icon'\\) && \\(k.toLowerCase\\(\\).includes\\('image'\\) || k === 'ScanSearch' || k === 'Scan' || k === 'FileImage'\\)\\); console.log\\(icons.join\\('\\\\n'\\)\\);\")"
+    ]
+  }
+}

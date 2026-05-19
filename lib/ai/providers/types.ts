@@ -1,9 +1,12 @@
 import "server-only";
 import type { AspectRatio } from "@/lib/config/aspectRatios";
+import type { GenerationMode } from "@/types/scene";
 
 export interface GenerateInput {
   prompt: string;
   aspectRatio: AspectRatio;
+  /** base64 data URL of the character reference image, when available */
+  referenceImageData?: string;
 }
 
 export interface GenerateResult {
@@ -11,6 +14,7 @@ export interface GenerateResult {
   provider: "openai" | "placeholder";
   model: string;
   latencyMs: number;
+  generationMode: GenerationMode;
 }
 
 export interface ImageProvider {

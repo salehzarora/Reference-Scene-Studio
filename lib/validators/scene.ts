@@ -8,6 +8,8 @@ const aspectIds = ASPECT_RATIOS.map((a) => a.id) as [string, ...string[]];
 const characterReferenceSchema = z.object({
   name: z.string().max(80, "Reference name is too long (max 80 chars)"),
   notes: z.string().max(500, "Reference notes are too long (max 500 chars)"),
+  // base64 data URL sent only at generation time; not stored in localStorage
+  referenceImageData: z.string().optional(),
 });
 
 export const generateImageSchema = z.object({

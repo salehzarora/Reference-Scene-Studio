@@ -46,11 +46,19 @@ export async function POST(req: Request) {
     return errorResponse("invalid_aspect", "Unknown aspect ratio", 400);
   }
 
+  // Extract image data before building the prompt metadata object.
+  // The referenceImageData is never logged or stored — used only for the
+  // provider call and then discarded.
+  const referenceImageData = characterReference?.referenceImageData;
+  const referenceForPrompt = characterReference
+    ? { name: characterReference.name, notes: characterReference.notes }
+    : null;
+
   const finalPrompt = buildPrompt({
     description,
     stylePreset,
     aspectRatio,
-    characterReference: characterReference ?? null,
+    characterReference: referenceForPrompt,
     seriesContinuity: Boolean(seriesContinuity),
   });
   const provider = getActiveProvider();
@@ -58,15 +66,18 @@ export async function POST(req: Request) {
   let providerImageUrl: string;
   let providerName: "openai" | "placeholder";
   let modelName: string;
+  let generationMode: GenerateImageResponse["generationMode"];
 
   try {
     const result = await provider.generate({
       prompt: finalPrompt,
       aspectRatio: ratio,
+      referenceImageData,
     });
     providerImageUrl = result.imageUrl;
     providerName = result.provider;
     modelName = result.model;
+    generationMode = result.generationMode;
   } catch (err) {
     if (err instanceof ProviderError) {
       return errorResponse(
@@ -97,6 +108,7 @@ export async function POST(req: Request) {
     finalPrompt,
     provider: providerName,
     model: modelName,
+    generationMode,
   };
   return NextResponse.json(payload);
 }

@@ -66,6 +66,7 @@ export const placeholderProvider: ImageProvider = {
       provider: "placeholder",
       model: "placeholder-svg",
       latencyMs: Date.now() - start,
+      generationMode: "placeholder",
     };
   },
 };
