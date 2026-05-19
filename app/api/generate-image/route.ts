@@ -33,8 +33,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const { description, stylePreset, aspectRatio, characterReference } =
-    parsed.data;
+  const {
+    description,
+    stylePreset,
+    aspectRatio,
+    characterReference,
+    seriesContinuity,
+  } = parsed.data;
   const ratio = getAspectRatio(aspectRatio);
   if (!ratio) {
     return errorResponse("invalid_aspect", "Unknown aspect ratio", 400);
@@ -45,6 +50,7 @@ export async function POST(req: Request) {
     stylePreset,
     aspectRatio,
     characterReference: characterReference ?? null,
+    seriesContinuity: Boolean(seriesContinuity),
   });
   const provider = getActiveProvider();
 

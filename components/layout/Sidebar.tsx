@@ -2,16 +2,33 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Plus, Settings, Clapperboard } from "lucide-react";
+import {
+  LayoutDashboard,
+  Plus,
+  Settings,
+  Clapperboard,
+  Film,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard, match: (p: string) => p === "/" },
+  {
+    href: "/",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    match: (p: string) => p === "/",
+  },
   {
     href: "/scenes/new",
     label: "New Scene",
     icon: Plus,
     match: (p: string) => p.startsWith("/scenes/new"),
+  },
+  {
+    href: "/series/new",
+    label: "New Series",
+    icon: Film,
+    match: (p: string) => p.startsWith("/series/new"),
   },
   {
     href: "/settings",
@@ -31,7 +48,7 @@ export function Sidebar() {
         </div>
         <div className="leading-tight">
           <div className="text-sm font-semibold text-text-primary">Reference Scene</div>
-          <div className="text-[11px] text-text-muted -mt-0.5">Studio · v0.1</div>
+          <div className="text-[11px] text-text-muted -mt-0.5">Studio · v0.3</div>
         </div>
       </div>
       <nav className="flex-1 p-2.5 space-y-1">
@@ -57,8 +74,12 @@ export function Sidebar() {
       </nav>
       <div className="p-3 border-t border-border">
         <div className="rounded-md border border-border bg-bg-base/60 px-3 py-2.5">
-          <div className="text-[11px] uppercase tracking-wider text-text-muted">Stage</div>
-          <div className="text-sm text-text-primary mt-0.5">1 · Text → Image</div>
+          <div className="text-[11px] uppercase tracking-wider text-text-muted">
+            Stage
+          </div>
+          <div className="text-sm text-text-primary mt-0.5">
+            3 · Scene Series
+          </div>
         </div>
       </div>
     </aside>

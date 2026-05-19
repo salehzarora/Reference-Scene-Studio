@@ -18,6 +18,7 @@ export const generateImageSchema = z.object({
   stylePreset: z.enum(styleIds),
   aspectRatio: z.enum(aspectIds),
   characterReference: characterReferenceSchema.optional().nullable(),
+  seriesContinuity: z.boolean().optional(),
 });
 
 export type GenerateImageBody = z.infer<typeof generateImageSchema>;

@@ -18,6 +18,18 @@ function crumbs(pathname: string): { label: string; href: string }[] {
       { label: "Scene", href: pathname },
     ];
   }
+  if (pathname.startsWith("/series/new")) {
+    return [
+      { label: "Dashboard", href: "/" },
+      { label: "New Series", href: "/series/new" },
+    ];
+  }
+  if (pathname.startsWith("/series/")) {
+    return [
+      { label: "Dashboard", href: "/" },
+      { label: "Series", href: pathname },
+    ];
+  }
   if (pathname.startsWith("/settings")) {
     return [
       { label: "Dashboard", href: "/" },
@@ -42,7 +54,9 @@ export function Topbar() {
                   <ChevronRight className="h-3.5 w-3.5 text-text-muted" />
                 ) : null}
                 {last ? (
-                  <span className="text-text-primary font-medium">{c.label}</span>
+                  <span className="text-text-primary font-medium">
+                    {c.label}
+                  </span>
                 ) : (
                   <Link
                     href={c.href}

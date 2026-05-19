@@ -7,12 +7,16 @@ export interface BuildPromptArgs {
   stylePreset: string;
   aspectRatio: string;
   characterReference?: CharacterReferenceForApi | null;
+  seriesContinuity?: boolean;
 }
+
+export const SERIES_CONTINUITY_INSTRUCTION =
+  "Keep the same character identity, proportions, clay texture, colors, and visual style across all scenes in this series.";
 
 /**
  * Combine the user description, character reference instructions (if any),
- * style modifiers, and aspect ratio hint into the final prompt string sent
- * to the image provider.
+ * style modifiers, aspect ratio hint, and continuity instruction (when this
+ * scene is part of a series) into the final prompt string.
  */
 export function buildPrompt(args: BuildPromptArgs): string {
   const style = getStylePreset(args.stylePreset);
@@ -31,6 +35,10 @@ export function buildPrompt(args: BuildPromptArgs): string {
     if (notes) {
       parts.push(`Reference notes: ${notes}`);
     }
+  }
+
+  if (args.seriesContinuity) {
+    parts.push(SERIES_CONTINUITY_INSTRUCTION);
   }
 
   if (style) parts.push(style.modifiers);
